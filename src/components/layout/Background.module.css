@@ -1,0 +1,50 @@
+.background {
+  position: fixed;
+  inset: 0;
+  background: var(--color-bg);
+  overflow: hidden;
+  z-index: -1;
+}
+
+.gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(30, 20, 45, 0.9) 0%,
+    var(--color-bg) 70%
+  );
+}
+
+.purpleGlow {
+  position: absolute;
+  width: 70vw;
+  height: 70vw;
+  max-width: 700px;
+  max-height: 700px;
+  top: -15%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle,
+    rgba(184, 161, 255, 0.22) 0%,
+    transparent 65%
+  );
+  filter: blur(60px);
+}
+
+.pinkGlow {
+  position: absolute;
+  width: 55vw;
+  height: 55vw;
+  max-width: 500px;
+  max-height: 500px;
+  bottom: -10%;
+  right: -10%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 182, 193, 0.18) 0%,
+    transparent 65%
+  );
+  filter: blur(50px);
+}

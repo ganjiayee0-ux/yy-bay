@@ -1,0 +1,80 @@
+.button {
+  position: relative;
+  overflow: hidden;
+  min-width: 120px;
+  padding: 0.85rem 1.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-white-soft);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  transition:
+    box-shadow 0.5s ease,
+    border-color 0.5s ease,
+    background 0.5s ease;
+}
+
+.button:hover:not(:disabled) {
+  border-color: rgba(255, 182, 193, 0.45);
+  box-shadow: var(--glow-pink);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 182, 193, 0.18) 0%,
+    rgba(184, 161, 255, 0.14) 100%
+  );
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ghost {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+}
+
+.ripple {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  animation: ripple 0.9s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  from {
+    transform: scale(0);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(18);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .button {
+    min-width: 100px;
+    padding: 0.9rem 1.4rem;
+    font-size: 0.92rem;
+  }
+}

@@ -1,0 +1,62 @@
+.wrapper {
+  position: relative;
+}
+
+.card {
+  position: relative;
+  width: min(92vw, 420px);
+  padding: clamp(2rem, 5vw, 3rem);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  border: 1px solid var(--color-glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow:
+    var(--glow-purple),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  text-align: center;
+}
+
+.floating {
+  animation: float 8s ease-in-out infinite;
+}
+
+.glow {
+  position: absolute;
+  inset: -40%;
+  background: radial-gradient(
+    circle at 50% 30%,
+    rgba(255, 182, 193, 0.12) 0%,
+    rgba(184, 161, 255, 0.08) 35%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card > *:not(.glow) {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: min(94vw, 100%);
+    padding: 1.75rem 1.5rem;
+  }
+}

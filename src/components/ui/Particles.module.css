@@ -1,0 +1,19 @@
+.container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(255, 204, 170, 0.9) 0%,
+    rgba(255, 182, 193, 0.4) 50%,
+    transparent 100%
+  );
+  filter: blur(0.5px);
+}

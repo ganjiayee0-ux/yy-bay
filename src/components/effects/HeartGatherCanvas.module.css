@@ -1,0 +1,85 @@
+.wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  background: radial-gradient(
+    ellipse 90% 70% at 50% 40%,
+    rgba(28, 16, 42, 0.95) 0%,
+    #07070b 55%,
+    #030305 100%
+  );
+}
+
+.canvas {
+  width: 100%;
+  height: 100vh;
+  display: block;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+.glowTop {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  width: min(70vw, 520px);
+  height: min(40vw, 280px);
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(184, 161, 255, 0.16) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.glowBottom {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  width: min(95vw, 820px);
+  height: min(55vw, 480px);
+  transform: translateX(-50%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 140, 180, 0.22) 0%,
+    rgba(184, 120, 255, 0.12) 35%,
+    transparent 70%
+  );
+  filter: blur(60px);
+  pointer-events: none;
+  animation: pulseGlow 4s ease-in-out infinite;
+}
+
+.glowHeart {
+  position: absolute;
+  bottom: 18%;
+  left: 50%;
+  width: min(60vw, 420px);
+  height: min(50vw, 360px);
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse,
+    rgba(255, 200, 220, 0.18) 0%,
+    rgba(255, 150, 190, 0.08) 45%,
+    transparent 75%
+  );
+  filter: blur(35px);
+  pointer-events: none;
+  animation: pulseGlow 3s ease-in-out infinite reverse;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.08);
+  }
+}

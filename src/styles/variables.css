@@ -1,0 +1,21 @@
+:root {
+  --color-bg: #0b0b0f;
+  --color-pink: #ffb6c1;
+  --color-purple: #b8a1ff;
+  --color-peach: #ffccaa;
+  --color-white-soft: rgba(255, 255, 255, 0.92);
+  --color-white-muted: rgba(255, 255, 255, 0.55);
+  --color-glass: rgba(255, 255, 255, 0.06);
+  --color-glass-border: rgba(255, 255, 255, 0.12);
+  --font-serif: 'Cormorant Garamond', 'Noto Serif SC', 'Songti SC', serif;
+  --font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --ease-cinematic: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-slow: 1.2s var(--ease-cinematic);
+  --transition-medium: 0.7s var(--ease-cinematic);
+  --glow-pink: 0 0 60px rgba(255, 182, 193, 0.25);
+  --glow-purple: 0 0 80px rgba(184, 161, 255, 0.2);
+  --glass-blur: blur(24px);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --radius-sm: 12px;
+}
