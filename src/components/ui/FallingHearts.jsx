@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { isMobileViewport } from '../../utils/performance';
 import styles from './FallingHearts.module.css';
 
 function HeartShape({ size, color }) {
@@ -35,7 +35,6 @@ function createHearts(count) {
     duration: Math.random() * 6 + 5,
     delay: Math.random() * 7,
     drift: (Math.random() - 0.5) * 90,
-    sway: (Math.random() - 0.5) * 36,
     rotate: (Math.random() - 0.5) * 40,
     opacity: Math.random() * 0.4 + 0.18,
     color: colors[Math.floor(Math.random() * colors.length)],
@@ -43,7 +42,8 @@ function createHearts(count) {
 }
 
 export default function FallingHearts({ intensity = 1, visible = true }) {
-  const count = Math.round(72 * intensity);
+  const baseCount = isMobileViewport() ? 22 : 44;
+  const count = Math.round(baseCount * intensity);
   const hearts = useMemo(() => createHearts(count), [count]);
 
   if (!visible) return null;
@@ -51,30 +51,20 @@ export default function FallingHearts({ intensity = 1, visible = true }) {
   return (
     <div className={styles.container} aria-hidden>
       {hearts.map((heart) => (
-        <motion.div
+        <div
           key={heart.id}
           className={styles.heart}
           style={{
             left: `${heart.x}%`,
-            filter: `drop-shadow(0 0 ${heart.size * 0.4}px rgba(255, 180, 200, 0.35))`,
-          }}
-          initial={{ y: '-8vh', x: 0, opacity: 0, rotate: heart.rotate }}
-          animate={{
-            y: ['-8vh', '108vh'],
-            x: [0, heart.drift, heart.drift + heart.sway],
-            opacity: [0, heart.opacity, heart.opacity, 0],
-            rotate: [heart.rotate, heart.rotate + 15, heart.rotate - 10],
-          }}
-          transition={{
-            duration: heart.duration,
-            delay: heart.delay,
-            repeat: Infinity,
-            ease: 'linear',
-            times: [0, 0.08, 0.88, 1],
+            '--duration': `${heart.duration}s`,
+            '--delay': `${heart.delay}s`,
+            '--drift': `${heart.drift}px`,
+            '--opacity': heart.opacity,
+            '--rotate': `${heart.rotate}deg`,
           }}
         >
           <HeartShape size={heart.size} color={heart.color} />
-        </motion.div>
+        </div>
       ))}
     </div>
   );

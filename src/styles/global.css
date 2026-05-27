@@ -10,6 +10,7 @@
 
 html {
   scroll-behavior: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 html,
@@ -26,6 +27,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
 }
 
 button,

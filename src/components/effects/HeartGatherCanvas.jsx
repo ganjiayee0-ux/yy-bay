@@ -178,7 +178,7 @@ function createOrbitParticles(width, height) {
     { count: 52, rx: width * 0.4, ry: height * 0.118, size: [10, 15], speed: -0.09, delay: 2.2 },
   ];
 
-  rings.forEach((ring, ringIndex) => {
+  rings.forEach((ring) => {
     for (let i = 0; i < ring.count; i += 1) {
       const angle = (i / ring.count) * Math.PI * 2;
       const tx = centerX + Math.cos(angle) * ring.rx;
@@ -195,7 +195,6 @@ function createOrbitParticles(width, height) {
         tx,
         ty,
         angle,
-        ringIndex,
         rx: ring.rx,
         ry: ring.ry,
         centerX,
@@ -240,6 +239,7 @@ export default function HeartGatherCanvas() {
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
   const startRef = useRef(null);
+  const animationStartedRef = useRef(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -261,11 +261,11 @@ export default function HeartGatherCanvas() {
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const fontSize = width < 480 ? 42 : width < 768 ? 56 : 72;
+      const fontSize = width < 480 ? 48 : width < 768 ? 56 : 72;
       const textWidth = Math.min(width * 0.92, 760);
-      const textHeight = Math.min(height * 0.28, 180);
+      const textHeight = Math.min(height * 0.3, 200);
       const points = sampleTextPoints(
-        letterContent.heartReveal.message,
+        letterContent.heartReveal.lines,
         textWidth,
         textHeight,
         fontSize,
@@ -288,7 +288,9 @@ export default function HeartGatherCanvas() {
         baseScale: orbitData.baseScale,
       };
       sparkles = createSparkles(width, height);
-      startRef.current = null;
+      if (!animationStartedRef.current) {
+        startRef.current = null;
+      }
     };
 
     resize();
@@ -297,6 +299,7 @@ export default function HeartGatherCanvas() {
 
     const render = (timestamp) => {
       if (!startRef.current) startRef.current = timestamp;
+      animationStartedRef.current = true;
       const elapsed = (timestamp - startRef.current) / 1000;
 
       ctx.clearRect(0, 0, width, height);
@@ -362,7 +365,9 @@ export default function HeartGatherCanvas() {
         const breathe = 1 + 0.06 * Math.sin(elapsed * 1.3 + particle.layer * 0.5);
 
         if (particle.type === 'heartLayer') {
-          const rotation = orbitTime * particle.rotationSpeed + mainRotation * (particle.layer % 2 === 0 ? 0.4 : -0.25);
+          const rotation =
+            orbitTime * particle.rotationSpeed +
+            mainRotation * (particle.layer % 2 === 0 ? 0.4 : -0.25);
           const scaledTx = particle.centerX + (particle.tx - particle.centerX) * breathe;
           const scaledTy = particle.centerY + (particle.ty - particle.centerY) * breathe;
           const rotated = rotatePoint(scaledTx, scaledTy, particle.centerX, particle.centerY, rotation);

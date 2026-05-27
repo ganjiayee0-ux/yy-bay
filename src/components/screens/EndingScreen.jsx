@@ -14,21 +14,12 @@ export default function EndingScreen({ onNext }) {
       >
         <motion.p
           className={styles.line}
-          initial={{ opacity: 0, y: 20, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          transition={{ duration: 2, delay: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.4, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
           {letterContent.finalLine}
         </motion.p>
-
-        <motion.div
-          className={styles.glow}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 3, delay: 1.5, ease: [0.22, 1, 0.36, 1] }}
-          aria-hidden
-        />
-
         <motion.div
           className={styles.next}
           initial={{ opacity: 0, y: 12 }}

@@ -1,19 +1,33 @@
 .container {
   position: absolute;
   inset: 0;
-  overflow: hidden;
   pointer-events: none;
-  z-index: 0;
+  overflow: hidden;
+  contain: strict;
 }
 
 .particle {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 204, 170, 0.9) 0%,
-    rgba(255, 182, 193, 0.4) 50%,
-    transparent 100%
-  );
-  filter: blur(0.5px);
+  background: rgba(255, 220, 235, 0.85);
+  will-change: transform, opacity;
+  animation: particleFloat var(--duration) ease-in-out var(--delay) infinite;
+}
+
+@keyframes particleFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: var(--opacity, 0.3);
+  }
+  50% {
+    transform: translate3d(var(--drift-x), -24px, 0);
+    opacity: var(--peak-opacity, 0.45);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .particle {
+    animation: none;
+  }
 }

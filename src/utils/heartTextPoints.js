@@ -1,4 +1,5 @@
-export function sampleTextPoints(text, canvasWidth, canvasHeight, fontSize, fontFamily) {
+export function sampleTextPoints(textOrLines, canvasWidth, canvasHeight, fontSize, fontFamily) {
+  const lines = Array.isArray(textOrLines) ? textOrLines : [textOrLines];
   const canvas = document.createElement('canvas');
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
@@ -6,19 +7,26 @@ export function sampleTextPoints(text, canvasWidth, canvasHeight, fontSize, font
   const ctx = canvas.getContext('2d');
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
   ctx.fillStyle = '#ffffff';
-  ctx.font = `500 ${fontSize}px ${fontFamily}`;
+  ctx.font = `700 ${fontSize}px ${fontFamily}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, canvasWidth / 2, canvasHeight / 2);
+
+  const lineHeight = fontSize * 1.32;
+  const blockHeight = lineHeight * (lines.length - 1);
+  const firstY = canvasHeight / 2 - blockHeight / 2;
+
+  lines.forEach((line, index) => {
+    ctx.fillText(line, canvasWidth / 2, firstY + index * lineHeight);
+  });
 
   const { data, width, height } = ctx.getImageData(0, 0, canvasWidth, canvasHeight);
-  const gap = window.innerWidth < 480 ? 7 : 5;
+  const gap = window.innerWidth < 480 ? 4 : 5;
   const points = [];
 
   for (let y = 0; y < height; y += gap) {
     for (let x = 0; x < width; x += gap) {
       const alpha = data[(y * width + x) * 4 + 3];
-      if (alpha > 140) {
+      if (alpha > 100) {
         points.push({ x, y });
       }
     }

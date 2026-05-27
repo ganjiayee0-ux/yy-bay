@@ -33,8 +33,14 @@
   outline: none;
   text-align: center;
   font-size: 1.1rem;
-  letter-spacing: 0.12em;
   color: var(--color-white-soft);
+}
+
+/* text 而非 password，手机才能用中文输入法；用圆点遮住已输入内容 */
+.inputMasked {
+  -webkit-text-security: disc;
+  text-security: disc;
+  letter-spacing: 0.06em;
 }
 
 .input::placeholder {

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { isMobileViewport } from '../../utils/performance';
 import styles from './Particles.module.css';
 
 function createParticles(count, intensity = 1) {
@@ -8,19 +8,21 @@ function createParticles(count, intensity = 1) {
     x: Math.random() * 100,
     y: Math.random() * 100,
     size: (Math.random() * 3 + 1) * intensity,
-    duration: Math.random() * 20 + 15,
-    delay: Math.random() * 8,
+    duration: Math.random() * 16 + 12,
+    delay: Math.random() * 6,
     opacity: (Math.random() * 0.4 + 0.15) * intensity,
+    driftX: (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 10 + 4),
   }));
 }
 
 export default function Particles({ intensity = 1 }) {
-  const particles = useMemo(() => createParticles(48, intensity), [intensity]);
+  const count = isMobileViewport() ? 16 : 32;
+  const particles = useMemo(() => createParticles(count, intensity), [count, intensity]);
 
   return (
     <div className={styles.container} aria-hidden>
       {particles.map((particle) => (
-        <motion.span
+        <span
           key={particle.id}
           className={styles.particle}
           style={{
@@ -28,18 +30,11 @@ export default function Particles({ intensity = 1 }) {
             top: `${particle.y}%`,
             width: particle.size,
             height: particle.size,
-            opacity: particle.opacity,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            x: [0, Math.random() > 0.5 ? 12 : -12, 0],
-            opacity: [particle.opacity, particle.opacity * 1.4, particle.opacity],
-          }}
-          transition={{
-            duration: particle.duration,
-            delay: particle.delay,
-            repeat: Infinity,
-            ease: 'easeInOut',
+            '--duration': `${particle.duration}s`,
+            '--delay': `${particle.delay}s`,
+            '--drift-x': `${particle.driftX}px`,
+            '--opacity': particle.opacity,
+            '--peak-opacity': particle.opacity * 1.35,
           }}
         />
       ))}

@@ -29,14 +29,14 @@ export function getHeartAnchor(width, height, scale) {
   };
 }
 
-export function createDenseHeartFill(anchorX, anchorY, scale, targetCount = 1400) {
+export function createDenseHeartFill(anchorX, anchorY, scale, targetCount = 1400, rhoPower = 0.58) {
   const points = [];
   const scaleX = 0.94;
   const scaleY = 1.02;
 
   while (points.length < targetCount) {
     const t = Math.random() * Math.PI * 2;
-    const rho = Math.pow(Math.random(), 0.58);
+    const rho = Math.pow(Math.random(), rhoPower);
     const { x, y } = heartLocalXY(t, scale, scaleX, scaleY);
 
     points.push({

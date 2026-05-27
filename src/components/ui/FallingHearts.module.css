@@ -4,14 +4,40 @@
   pointer-events: none;
   z-index: 1;
   overflow: hidden;
+  contain: strict;
 }
 
 .heart {
   position: absolute;
   top: 0;
-  will-change: transform, opacity;
+  will-change: transform;
+  animation: heartFall var(--duration) linear var(--delay) infinite;
+  transform: translate3d(0, -8vh, 0) rotate(var(--rotate));
 }
 
 .shape {
   display: block;
+}
+
+@keyframes heartFall {
+  0% {
+    transform: translate3d(0, -8vh, 0) rotate(var(--rotate));
+    opacity: 0;
+  }
+  8% {
+    opacity: var(--opacity);
+  }
+  88% {
+    opacity: var(--opacity);
+  }
+  100% {
+    transform: translate3d(var(--drift), 108vh, 0) rotate(calc(var(--rotate) + 12deg));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    display: none;
+  }
 }

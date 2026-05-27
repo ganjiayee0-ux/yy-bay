@@ -6,6 +6,7 @@ import {
   getHeartAnchor,
   randomRange,
 } from '../../utils/heartShape';
+import { getCanvasDpr } from '../../utils/performance';
 import styles from './HeartPulseCanvas.module.css';
 
 const GATHER_END = 3.5;
@@ -32,7 +33,7 @@ function drawGlowDot(ctx, x, y, size, r, g, b, alpha, blur = 0) {
 function createMainParticles(width, height) {
   const baseScale = width < 480 ? 5.2 : width < 768 ? 6.5 : 8;
   const anchor = getHeartAnchor(width, height, baseScale);
-  const count = width < 480 ? 950 : 1500;
+  const count = width < 768 ? 520 : 1200;
   const targets = createDenseHeartFill(anchor.x, anchor.y, baseScale, count);
 
   return targets.map((target, index) => {
@@ -76,17 +77,20 @@ export default function HeartPulseCanvas() {
     let centerX = 0;
     let centerY = 0;
 
+    let liteDraw = false;
+
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       width = canvas.clientWidth;
       height = canvas.clientHeight;
+      const dpr = getCanvasDpr(width);
+      liteDraw = width < 768;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       centerX = width / 2;
       centerY = getHeartAnchor(width, height, width < 480 ? 5.2 : width < 768 ? 6.5 : 8).y;
       mainParticles = createMainParticles(width, height);
-      floorParticles = createFloorParticles(width, height, width < 480 ? 380 : 580);
+      floorParticles = createFloorParticles(width, height, width < 768 ? 200 : 480);
       startRef.current = null;
     };
 
@@ -153,7 +157,7 @@ export default function HeartPulseCanvas() {
         const baseIntensity = isBeating ? 0.5 + ambientFloorPulse * 0.25 : 0.08 + flashPhase * 0.2;
         const alpha = p.opacity * baseIntensity * twinkle * ownPulse;
         const size = p.size * (0.85 + ownPulse * 0.35);
-        const blur = 3 + ownPulse * 5;
+        const blur = liteDraw ? 0 : 3 + ownPulse * 5;
         drawGlowDot(ctx, floatX, floatY, size, r, g, b, alpha, blur);
       }
 
@@ -200,7 +204,7 @@ export default function HeartPulseCanvas() {
         const twinkle = 0.7 + 0.3 * Math.sin(elapsed * 3.5 + particle.twinkle);
         const alpha = Math.min(1, gather * 1.15) * twinkle;
         const size = particle.size * (isBeating ? 1.1 + beatWave * 0.35 : 1);
-        const blur = isBeating ? 8 + beatWave * 6 : 3 + gather * 3;
+        const blur = liteDraw ? 0 : isBeating ? 8 + beatWave * 6 : 3 + gather * 3;
 
         drawGlowDot(ctx, particle.x, particle.y, size, r, g, b, alpha, blur);
       });

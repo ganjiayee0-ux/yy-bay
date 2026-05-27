@@ -28,11 +28,14 @@ export default function PasscodeInput({
       >
         <input
           ref={inputRef}
-          type="password"
+          type="text"
+          lang="zh-CN"
           inputMode="text"
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
           spellCheck={false}
-          className={styles.input}
+          className={`${styles.input} ${styles.inputMasked}`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setFocused(true)}

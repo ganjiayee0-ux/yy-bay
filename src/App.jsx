@@ -30,7 +30,7 @@ export default function App() {
     screen === SCREENS.AFTER_READ ||
     screen === SCREENS.ENDING;
 
-  useLenis(isLetterFlow);
+  useLenis(isLetterFlow, screen);
 
   const showBackground =
     screen !== SCREENS.HEART_REVEAL && screen !== SCREENS.HEART_PULSE;
@@ -73,6 +73,7 @@ export default function App() {
   };
 
   const handleReadDone = useCallback(() => {
+    window.scrollTo(0, 0);
     setScreen(SCREENS.AFTER_READ);
   }, []);
 
@@ -134,7 +135,7 @@ export default function App() {
     screen === SCREENS.LETTER ||
     screen === SCREENS.AFTER_READ ||
     screen === SCREENS.ENDING
-      ? 1.6
+      ? 1.2
       : 1;
 
   return (

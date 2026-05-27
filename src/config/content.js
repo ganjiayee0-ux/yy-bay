@@ -72,7 +72,7 @@ export const letterContent = {
   finalLine: "I'm still here.",
   endingNextButton: 'Next',
   heartReveal: {
-    message: '我真的很爱你 陈紫艳',
+    lines: ['我很爱你', '陈紫艳'],
     back: '回去',
   },
   heartPulse: {
