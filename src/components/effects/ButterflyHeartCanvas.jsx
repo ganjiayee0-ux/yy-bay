@@ -1,18 +1,12 @@
 import { useEffect, useRef } from 'react';
-import { getCanvasDpr, isMobileViewport } from '../../utils/performance';
+import { getButterflyPerfProfile } from '../../utils/performance';
 import styles from './ButterflyHeartCanvas.module.css';
 
-const MAX_PARTICLES_DESKTOP = 720;
-const MAX_PARTICLES_MOBILE = 380;
-const EMIT_PER_FRAME_DESKTOP = 12;
-const EMIT_PER_FRAME_MOBILE = 4;
 const HEART_POINTS = 720;
 const COLORS = ['#4fc3ff', '#38bdf8', '#a5f3ff'];
 const INTRO_EMPTY_SEC = 1.15;
 const SPRAY_ONLY_SEC = 8.5;
 const GATHER_DURATION_SEC = 6;
-const FLOOR_SWARM_DESKTOP = 140;
-const FLOOR_SWARM_MOBILE = 90;
 
 function heartPoint(t, scale, cx, cy, pulse = 1) {
   const s = scale * pulse;
@@ -31,8 +25,8 @@ function sampleHeartParams(count = HEART_POINTS) {
   return Array.from({ length: count }, (_, i) => ((Math.PI * 2) / count) * i);
 }
 
-function buildHeartDust() {
-  return Array.from({ length: 1300 }, () => ({
+function buildHeartDust(count) {
+  return Array.from({ length: count }, () => ({
     t: Math.random() * Math.PI * 2,
     rho: Math.pow(Math.random(), 0.42),
     startAngle: Math.random() * Math.PI * 2,
@@ -176,11 +170,16 @@ export default function ButterflyHeartCanvas() {
     if (!canvas) return undefined;
 
     const ctx = canvas.getContext('2d');
-    const lite = isMobileViewport();
-    const maxParticles = lite ? MAX_PARTICLES_MOBILE : MAX_PARTICLES_DESKTOP;
-    const emitPerFrame = lite ? EMIT_PER_FRAME_MOBILE : EMIT_PER_FRAME_DESKTOP;
+    let perf = getButterflyPerfProfile(
+      canvas.clientWidth || window.innerWidth,
+      canvas.clientHeight || window.innerHeight,
+    );
+    let maxParticles = perf.maxParticles;
+    let emitPerFrame = perf.emitPerFrame;
+    let lite = perf.lite;
+    let frameIntervalMs = perf.frameIntervalMs;
     const heartTs = sampleHeartParams();
-    const heartDust = buildHeartDust();
+    let heartDust = buildHeartDust(perf.heartDustCount);
     let floorSwarm = [];
     let width = 0;
     let height = 0;
@@ -192,15 +191,20 @@ export default function ButterflyHeartCanvas() {
       width = canvas.clientWidth;
       height = canvas.clientHeight;
       scale = width < 480 ? 7.5 : width < 768 ? 8.5 : 10.5;
-      const dpr = getCanvasDpr(width);
+      perf = getButterflyPerfProfile(width, height);
+      maxParticles = perf.maxParticles;
+      emitPerFrame = perf.emitPerFrame;
+      lite = perf.lite;
+      frameIntervalMs = perf.frameIntervalMs;
+      heartDust = buildHeartDust(perf.heartDustCount);
+      const dpr = perf.dpr;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       particlesRef.current = [];
       startRef.current = null;
-      floorSwarm = Array.from(
-        { length: lite ? FLOOR_SWARM_MOBILE : FLOOR_SWARM_DESKTOP },
-        () => makeFloorButterfly(width, height),
+      floorSwarm = Array.from({ length: perf.floorSwarm }, () =>
+        makeFloorButterfly(width, height),
       );
     };
 
@@ -208,7 +212,7 @@ export default function ButterflyHeartCanvas() {
     window.addEventListener('resize', resize);
 
     const render = (timeMs) => {
-      if (lite && timeMs - lastTs < 33) {
+      if (frameIntervalMs > 0 && timeMs - lastTs < frameIntervalMs) {
         frameRef.current = requestAnimationFrame(render);
         return;
       }
@@ -390,7 +394,8 @@ export default function ButterflyHeartCanvas() {
 
       if (gatherPhase > 0.08) {
         const fillProgress = gatherLocal;
-        for (let i = 0; i < heartDust.length; i += 1) {
+        const dustStep = lite ? 2 : 1;
+        for (let i = 0; i < heartDust.length; i += dustStep) {
           const d = heartDust[i];
           const local = Math.min(1, Math.max(0, (fillProgress - d.delay) / (1 - d.delay)));
           const base = heartPoint(d.t, scale, cx, cy, pulse);
