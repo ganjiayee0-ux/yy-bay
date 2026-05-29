@@ -46,15 +46,8 @@ function randomScreenPoint(width, height, margin = 0) {
   };
 }
 
-function randomAmbientTarget(width, height) {
-  return {
-    x: 10 + Math.random() * (width - 20),
-    y: height * (0.12 + Math.random() * 0.62),
-  };
-}
-
-function makeFloorButterfly(width, height, ambientOnly = false) {
-  const target = ambientOnly ? randomAmbientTarget(width, height) : randomScreenPoint(width, height, 8);
+function makeFloorButterfly(width, height) {
+  const target = randomScreenPoint(width, height, 8);
   return {
     x: Math.random() * width,
     y: height + Math.random() * 100,
@@ -110,40 +103,15 @@ function makeParticle(width, height, heartTs) {
   };
 }
 
-function resetParticle(p, width, height, heartTs, ambientOnly = false) {
-  const n = ambientOnly ? makeAmbientParticle(width, height, heartTs) : makeParticle(width, height, heartTs);
+function resetParticle(p, width, height, heartTs) {
+  const n = makeParticle(width, height, heartTs);
   Object.assign(p, n);
 }
 
-/** After heart forms: spawn from bottom edge only, float upward through the scene */
-function makeAmbientParticle(width, height, heartTs) {
-  const target = randomAmbientTarget(width, height);
-  return {
-    x: Math.random() * width,
-    y: height + Math.random() * 60,
-    vx: Math.random() * 0.6 - 0.3,
-    vy: -(1.1 + Math.random() * 1.4),
-    ax: 0,
-    ay: 0,
-    tIndex: Math.floor(Math.random() * heartTs.length),
-    sprayTargetX: target.x,
-    sprayTargetY: target.y,
-    gatherReady: false,
-    size: 1.6 + Math.random() * 2.2,
-    colorIndex: Math.floor(Math.random() * COLORS.length),
-    flapPhase: Math.random() * Math.PI * 2,
-    flapSpeed: 5 + Math.random() * 5,
-    alpha: 0.3 + Math.random() * 0.55,
-    life: 0,
-    maxLife: 320 + Math.random() * 200,
-  };
-}
-
-function retargetSpray(p, width, height, ambientOnly = false) {
-  const target = ambientOnly ? randomAmbientTarget(width, height) : randomScreenPoint(width, height, 10);
+function retargetSpray(p, width, height) {
+  const target = randomScreenPoint(width, height, 10);
   p.sprayTargetX = target.x;
   p.sprayTargetY = target.y;
-  p.gatherReady = false;
 }
 
 function flowField(x, y, time) {
@@ -218,7 +186,6 @@ export default function ButterflyHeartCanvas() {
     let scale = 0;
     let rot = 0;
     let lastTs = 0;
-    let heartSettled = false;
 
     const resize = () => {
       width = canvas.clientWidth;
@@ -236,7 +203,6 @@ export default function ButterflyHeartCanvas() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       particlesRef.current = [];
       startRef.current = null;
-      heartSettled = false;
       floorSwarm = Array.from({ length: perf.floorSwarm }, () =>
         makeFloorButterfly(width, height),
       );
@@ -265,33 +231,17 @@ export default function ButterflyHeartCanvas() {
       const activeTime = elapsed - INTRO_EMPTY_SEC;
       const gatherRaw = Math.max(0, activeTime - SPRAY_ONLY_SEC);
       const gatherPhase = Math.min(1, gatherRaw / GATHER_DURATION_SEC);
-      const heartLocked = gatherPhase >= 1;
+      const gatherStart = 0;
       const gatherLocal = gatherPhase;
-      const rotationFactor =
-        heartLocked || gatherPhase <= 0 ? 0 : Math.max(0, 1 - gatherPhase * 1.35);
-
-      if (heartLocked && !heartSettled) {
-        heartSettled = true;
-        for (let i = 0; i < particlesRef.current.length; i += 1) {
-          resetParticle(particlesRef.current[i], width, height, heartTs, true);
-        }
-        for (let i = 0; i < floorSwarm.length; i += 1) {
-          Object.assign(floorSwarm[i], makeFloorButterfly(width, height, true));
-        }
-      }
+      const rotationFactor = gatherPhase <= 0 ? 0 : Math.max(0, 1 - gatherPhase * 1.35);
       rot += 0.00072 * rotationFactor;
       const pulse = 1 + 0.065 * Math.sin(activeTime * 1.7);
       const cx = width / 2;
       const cy = height * 0.5;
 
       const particles = particlesRef.current;
-      const emitCount = heartLocked
-        ? Math.min(emitPerFrame + 2, lite ? 6 : 10)
-        : emitPerFrame;
-      for (let i = 0; i < emitCount && particles.length < maxParticles; i += 1) {
-        particles.push(
-          heartLocked ? makeAmbientParticle(width, height, heartTs) : makeParticle(width, height, heartTs),
-        );
+      for (let i = 0; i < emitPerFrame && particles.length < maxParticles; i += 1) {
+        particles.push(makeParticle(width, height, heartTs));
       }
 
       ctx.globalCompositeOperation = 'source-over';
@@ -317,24 +267,22 @@ export default function ButterflyHeartCanvas() {
         const dist = Math.hypot(dx, dy) || 1;
 
         // Bottom spray: upward force + mild turbulence + target pull.
-        const bottomLift = heartLocked ? -0.055 : -0.035;
         f.vx += (Math.random() * 0.16 - 0.08) + (dx / dist) * 0.02;
-        f.vy += bottomLift + (dy / dist) * 0.012;
+        f.vy += -0.035 + (dy / dist) * 0.012;
         f.vx *= 0.965;
         f.vy *= 0.968;
         f.x += f.vx;
         f.y += f.vy;
 
         if (dist < 26) {
-          const next = heartLocked
-            ? randomAmbientTarget(width, height)
-            : randomScreenPoint(width, height, 8);
+          const next = randomScreenPoint(width, height, 8);
           f.sprayTargetX = next.x;
           f.sprayTargetY = next.y;
         }
 
         if (f.y < -60 || f.x < -100 || f.x > width + 100 || f.y > height + 80) {
-          Object.assign(f, makeFloorButterfly(width, height, heartLocked));
+          const n = makeFloorButterfly(width, height);
+          Object.assign(f, n);
         }
 
         const alpha = f.alpha * (0.6 + 0.4 * Math.sin(activeTime * 2 + f.twinkle));
@@ -353,7 +301,7 @@ export default function ButterflyHeartCanvas() {
 
       for (let i = particles.length - 1; i >= 0; i -= 1) {
         const p = particles[i];
-        const shouldGather = gatherPhase > 0 && gatherPhase < 1;
+        const shouldGather = gatherPhase > 0;
         p.life += 1;
         p.ax = 0;
         p.ay = 0;
@@ -365,14 +313,13 @@ export default function ButterflyHeartCanvas() {
         }
 
         const upwardBand = Math.max(0, 1 - Math.min(1, (height - p.y) / height));
-        const bottomPush = heartLocked ? -0.052 - upwardBand * 0.05 : -0.028 - upwardBand * 0.04;
-        p.ay += bottomPush * (heartLocked ? 1 : 1 - gatherLocal * 0.92);
+        p.ay += (-0.028 - upwardBand * 0.04) * (1 - gatherLocal * 0.92);
 
         let dx = 0;
         let dy = 0;
         let dist = 1;
-        if (!shouldGather && (p.life < 3 || Math.random() < (heartLocked ? 0.035 : 0.02))) {
-          retargetSpray(p, width, height, heartLocked);
+        if (!shouldGather && (p.life < 3 || Math.random() < 0.02)) {
+          retargetSpray(p, width, height);
         }
 
         if (shouldGather && !p.gatherReady) {
@@ -398,20 +345,13 @@ export default function ButterflyHeartCanvas() {
           p.ay += (dy / dist) * sprayAttract;
 
           if (dist < 24) {
-            retargetSpray(p, width, height, heartLocked);
+            retargetSpray(p, width, height);
           }
         }
 
         p.vx += p.ax;
         p.vy += p.ay;
-        const damping =
-          shouldGather && gatherPhase > 0.55
-            ? lite
-              ? 0.89
-              : 0.87
-            : lite
-              ? 0.994
-              : 0.988;
+        const damping = gatherPhase > 0.55 ? (lite ? 0.89 : 0.87) : lite ? 0.994 : 0.988;
         p.vx *= damping;
         p.vy *= damping;
         p.x += p.vx;
@@ -448,7 +388,7 @@ export default function ButterflyHeartCanvas() {
               p.x > width + 140)) ||
           (gatherPhase < 0.8 && p.life > p.maxLife)
         ) {
-          resetParticle(p, width, height, heartTs, heartLocked);
+          resetParticle(p, width, height, heartTs);
         }
       }
 
