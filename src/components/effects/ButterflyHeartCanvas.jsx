@@ -2,14 +2,14 @@ import { useEffect, useRef } from 'react';
 import { getCanvasDpr, isMobileViewport } from '../../utils/performance';
 import styles from './ButterflyHeartCanvas.module.css';
 
-const MAX_PARTICLES_DESKTOP = 640;
-const MAX_PARTICLES_MOBILE = 320;
-const EMIT_PER_FRAME_DESKTOP = 10;
-const EMIT_PER_FRAME_MOBILE = 3;
+const MAX_PARTICLES_DESKTOP = 720;
+const MAX_PARTICLES_MOBILE = 380;
+const EMIT_PER_FRAME_DESKTOP = 12;
+const EMIT_PER_FRAME_MOBILE = 4;
 const HEART_POINTS = 720;
 const COLORS = ['#4fc3ff', '#38bdf8', '#a5f3ff'];
 const INTRO_EMPTY_SEC = 1.15;
-const SPRAY_ONLY_SEC = 6.2;
+const SPRAY_ONLY_SEC = 8.5;
 const GATHER_DURATION_SEC = 6;
 const FLOOR_SWARM_DESKTOP = 140;
 const FLOOR_SWARM_MOBILE = 90;
@@ -45,14 +45,22 @@ function buildHeartDust() {
   }));
 }
 
-function makeFloorButterfly(width, height) {
+function randomScreenPoint(width, height, margin = 0) {
   return {
-    x: width / 2 + (Math.random() * 120 - 60),
-    y: height + Math.random() * 120,
+    x: margin + Math.random() * (width - margin * 2),
+    y: margin + Math.random() * (height - margin * 2),
+  };
+}
+
+function makeFloorButterfly(width, height) {
+  const target = randomScreenPoint(width, height, 8);
+  return {
+    x: Math.random() * width,
+    y: height + Math.random() * 100,
     vx: Math.random() * 0.7 - 0.35,
     vy: -(0.8 + Math.random() * 1.6),
-    sprayTargetX: width / 2 + (Math.random() * 360 - 180),
-    sprayTargetY: height * (0.52 + Math.random() * 0.34),
+    sprayTargetX: target.x,
+    sprayTargetY: target.y,
     flapPhase: Math.random() * Math.PI * 2,
     flapSpeed: 3 + Math.random() * 4,
     size: 1 + Math.random() * 2.2,
@@ -63,16 +71,33 @@ function makeFloorButterfly(width, height) {
 }
 
 function makeParticle(width, height, heartTs) {
+  const spawnEdge = Math.random();
+  let x;
+  let y;
+  if (spawnEdge < 0.12) {
+    x = -30 - Math.random() * 40;
+    y = Math.random() * height;
+  } else if (spawnEdge < 0.24) {
+    x = width + 30 + Math.random() * 40;
+    y = Math.random() * height;
+  } else if (spawnEdge < 0.36) {
+    x = Math.random() * width;
+    y = -30 - Math.random() * 40;
+  } else {
+    x = Math.random() * width;
+    y = height + Math.random() * 80;
+  }
+  const target = randomScreenPoint(width, height, 12);
   return {
-    x: width / 2 + (Math.random() * 80 - 40),
-    y: height + Math.random() * 120,
+    x,
+    y,
     vx: Math.random() * 0.8 - 0.4,
-    vy: -(1 + Math.random() * 2),
+    vy: -(0.6 + Math.random() * 1.8),
     ax: 0,
     ay: 0,
     tIndex: Math.floor(Math.random() * heartTs.length),
-    sprayTargetX: width / 2 + (Math.random() * 520 - 260),
-    sprayTargetY: height * (0.18 + Math.random() * 0.45),
+    sprayTargetX: target.x,
+    sprayTargetY: target.y,
     gatherReady: false,
     size: 1.8 + Math.random() * 2.6,
     colorIndex: Math.floor(Math.random() * COLORS.length),
@@ -90,9 +115,9 @@ function resetParticle(p, width, height, heartTs) {
 }
 
 function retargetSpray(p, width, height) {
-  p.sprayTargetY = height * (0.22 + Math.random() * 0.48);
-  const spread = (height - p.sprayTargetY) * 0.22;
-  p.sprayTargetX = width / 2 + (Math.random() * 2 - 1) * spread;
+  const target = randomScreenPoint(width, height, 10);
+  p.sprayTargetX = target.x;
+  p.sprayTargetY = target.y;
 }
 
 function flowField(x, y, time) {
@@ -208,7 +233,7 @@ export default function ButterflyHeartCanvas() {
       rot += 0.00045 * rotationFactor;
       const pulse = 1 + 0.065 * Math.sin(activeTime * 1.7);
       const cx = width / 2;
-      const cy = height * 0.52;
+      const cy = height * 0.5;
 
       const particles = particlesRef.current;
       for (let i = 0; i < emitPerFrame && particles.length < maxParticles; i += 1) {
@@ -220,16 +245,10 @@ export default function ButterflyHeartCanvas() {
       ctx.fillRect(0, 0, width, height);
 
       if (!lite) {
-        const bloom = ctx.createRadialGradient(
-          cx,
-          cy,
-          0,
-          cx,
-          cy,
-          Math.min(width, height) * 0.62 * pulse,
-        );
-        bloom.addColorStop(0, 'rgba(70, 180, 255, 0.16)');
-        bloom.addColorStop(0.5, 'rgba(40, 110, 220, 0.08)');
+        const bloomR = Math.max(width, height) * 0.85 * pulse;
+        const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomR);
+        bloom.addColorStop(0, 'rgba(70, 180, 255, 0.1)');
+        bloom.addColorStop(0.45, 'rgba(40, 110, 220, 0.05)');
         bloom.addColorStop(1, 'rgba(0, 0, 0, 0)');
         ctx.fillStyle = bloom;
         ctx.fillRect(0, 0, width, height);
@@ -252,11 +271,12 @@ export default function ButterflyHeartCanvas() {
         f.y += f.vy;
 
         if (dist < 26) {
-          f.sprayTargetX = width / 2 + (Math.random() * 2 - 1) * ((height - f.y) * 0.3);
-          f.sprayTargetY = height * (0.5 + Math.random() * 0.32);
+          const next = randomScreenPoint(width, height, 8);
+          f.sprayTargetX = next.x;
+          f.sprayTargetY = next.y;
         }
 
-        if (f.y < height * 0.45 || f.x < -80 || f.x > width + 80) {
+        if (f.y < -60 || f.x < -100 || f.x > width + 100 || f.y > height + 80) {
           const n = makeFloorButterfly(width, height);
           Object.assign(f, n);
         }
@@ -288,11 +308,8 @@ export default function ButterflyHeartCanvas() {
           p.ay += ff.y;
         }
 
-        const upwardBand = Math.max(0, 1 - Math.min(1, (height - p.y) / (height * 0.82)));
-        p.ay += (-0.045 - upwardBand * 0.06) * (1 - gatherLocal * 0.9);
-        if (shouldGather) {
-          p.ax += (cx - p.x) * 0.0012;
-        }
+        const upwardBand = Math.max(0, 1 - Math.min(1, (height - p.y) / height));
+        p.ay += (-0.028 - upwardBand * 0.04) * (1 - gatherLocal * 0.92);
 
         let dx = 0;
         let dy = 0;
@@ -323,7 +340,7 @@ export default function ButterflyHeartCanvas() {
           p.ax += (dx / dist) * sprayAttract;
           p.ay += (dy / dist) * sprayAttract;
 
-          if (dist < 24 || p.y < height * 0.28) {
+          if (dist < 24) {
             retargetSpray(p, width, height);
           }
         }
@@ -345,11 +362,6 @@ export default function ButterflyHeartCanvas() {
           p.y = rY;
         }
 
-        if (!shouldGather && p.y < height * 0.58) {
-          resetParticle(p, width, height, heartTs);
-          continue;
-        }
-
         const flap = (lite ? activeTime * 4.5 : activeTime * p.flapSpeed) + p.flapPhase;
         const facing = Math.atan2(p.vy, p.vx) + Math.PI / 2;
         drawButterfly(
@@ -366,10 +378,10 @@ export default function ButterflyHeartCanvas() {
 
         if (
           (!shouldGather &&
-            (p.y < -120 ||
-              p.x < -220 ||
-              p.x > width + 220 ||
-              (p.y < height * 0.25 && Math.abs(p.x - cx) < width * 0.23))) ||
+            (p.y < -140 ||
+              p.y > height + 140 ||
+              p.x < -140 ||
+              p.x > width + 140)) ||
           (gatherPhase < 0.8 && p.life > p.maxLife)
         ) {
           resetParticle(p, width, height, heartTs);
