@@ -19,7 +19,7 @@ export default function ButterflyHeartScreen({ onBack }) {
           className={styles.text}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 12.8, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1, delay: 8.2, ease: [0.22, 1, 0.36, 1] }}
         >
           <p>{letterContent.butterflyHeart.lines[0]}</p>
           <p>{letterContent.butterflyHeart.lines[1]}</p>
@@ -31,7 +31,7 @@ export default function ButterflyHeartScreen({ onBack }) {
           onClick={onBack}
           initial={{ opacity: 0, y: 10, x: '-50%' }}
           animate={{ opacity: 1, y: 0, x: '-50%' }}
-          transition={{ duration: 1.2, delay: 17.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.2, delay: 11.5, ease: [0.22, 1, 0.36, 1] }}
           whileHover={{ scale: 1.05, x: '-50%' }}
           whileTap={{ scale: 0.96, x: '-50%' }}
         >

@@ -4,9 +4,9 @@ import styles from './ButterflyHeartCanvas.module.css';
 
 const HEART_POINTS = 720;
 const COLORS = ['#4fc3ff', '#38bdf8', '#a5f3ff'];
-const INTRO_EMPTY_SEC = 1.15;
-const SPRAY_ONLY_SEC = 8.5;
-const GATHER_DURATION_SEC = 6;
+const INTRO_EMPTY_SEC = 0.85;
+const SPRAY_ONLY_SEC = 4.8;
+const GATHER_DURATION_SEC = 3.4;
 
 function heartPoint(t, scale, cx, cy, pulse = 1) {
   const s = scale * pulse;
@@ -234,7 +234,7 @@ export default function ButterflyHeartCanvas() {
       const gatherStart = 0;
       const gatherLocal = gatherPhase;
       const rotationFactor = gatherPhase <= 0 ? 0 : Math.max(0, 1 - gatherPhase * 1.35);
-      rot += 0.00045 * rotationFactor;
+      rot += 0.00072 * rotationFactor;
       const pulse = 1 + 0.065 * Math.sin(activeTime * 1.7);
       const cx = width / 2;
       const cy = height * 0.5;
@@ -333,7 +333,7 @@ export default function ButterflyHeartCanvas() {
           dx = target.x - p.x;
           dy = target.y - p.y;
           dist = Math.hypot(dx, dy) || 1;
-          const attract = Math.min(0.42, 18 / dist) * (0.12 + gatherLocal * 0.36);
+          const attract = Math.min(0.55, 24 / dist) * (0.22 + gatherLocal * 0.48);
           p.ax += (dx / dist) * attract;
           p.ay += (dy / dist) * attract;
         } else {
