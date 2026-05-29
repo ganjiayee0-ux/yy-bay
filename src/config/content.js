@@ -20,7 +20,7 @@ export const confirmationContent = {
   subtext: '你真的要打开吗？',
   open: '打开 ❤️',
   later: '以后再看 💔',
-  seeHeart: '还是要先看看我的心呢？',
+  seeHeart: 'love~',
   waiting: '那我会继续等你打开信',
   readNow: '我看~',
 };
@@ -73,6 +73,11 @@ export const letterContent = {
   endingNextButton: 'Next',
   heartReveal: {
     lines: ['我很爱你', '陈紫艳'],
+    back: '回去',
+    watchButterfly: '看蝴蝶爱心',
+  },
+  butterflyHeart: {
+    lines: ['我真的很爱你', '陈紫艳'],
     back: '回去',
   },
   heartPulse: {

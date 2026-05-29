@@ -15,6 +15,7 @@ export const SCREENS = {
   AFTER_READ: 'afterRead',
   ENDING: 'ending',
   HEART_REVEAL: 'heartReveal',
+  BUTTERFLY_HEART: 'butterflyHeart',
   HEART_PULSE: 'heartPulse',
   REJECTION: 'rejection',
   WAIT: 'wait',

@@ -1,126 +1,410 @@
 import { useEffect, useRef } from 'react';
-import { createDenseHeartFill, easeOutCubic, getHeartAnchor, randomRange } from '../../utils/heartShape';
-import { getCanvasDpr } from '../../utils/performance';
+import { getCanvasDpr, isMobileViewport } from '../../utils/performance';
 import styles from './ButterflyHeartCanvas.module.css';
 
-const GATHER_DELAY = 0.45;
+const MAX_PARTICLES_DESKTOP = 640;
+const MAX_PARTICLES_MOBILE = 320;
+const EMIT_PER_FRAME_DESKTOP = 10;
+const EMIT_PER_FRAME_MOBILE = 3;
+const HEART_POINTS = 720;
+const COLORS = ['#4fc3ff', '#38bdf8', '#a5f3ff'];
+const INTRO_EMPTY_SEC = 1.15;
+const SPRAY_ONLY_SEC = 6.2;
+const GATHER_DURATION_SEC = 6;
+const FLOOR_SWARM_DESKTOP = 140;
+const FLOOR_SWARM_MOBILE = 90;
 
-function drawButterfly(ctx, x, y, size, alpha, flap) {
-  const wingOpen = 0.7 + flap * 0.35;
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.globalAlpha = alpha;
-
-  const leftWing = ctx.createRadialGradient(-size * 0.6, 0, 0, -size * 0.6, 0, size * 1.2);
-  leftWing.addColorStop(0, 'rgba(255, 245, 205, 0.95)');
-  leftWing.addColorStop(0.5, 'rgba(255, 175, 120, 0.9)');
-  leftWing.addColorStop(1, 'rgba(255, 120, 150, 0)');
-  ctx.fillStyle = leftWing;
-  ctx.beginPath();
-  ctx.ellipse(-size * 0.55 * wingOpen, 0, size * 0.85, size * 0.55, -0.6, 0, Math.PI * 2);
-  ctx.fill();
-
-  const rightWing = ctx.createRadialGradient(size * 0.6, 0, 0, size * 0.6, 0, size * 1.2);
-  rightWing.addColorStop(0, 'rgba(255, 245, 205, 0.95)');
-  rightWing.addColorStop(0.5, 'rgba(255, 175, 120, 0.9)');
-  rightWing.addColorStop(1, 'rgba(255, 120, 150, 0)');
-  ctx.fillStyle = rightWing;
-  ctx.beginPath();
-  ctx.ellipse(size * 0.55 * wingOpen, 0, size * 0.85, size * 0.55, 0.6, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.fillStyle = `rgba(255, 250, 235, ${alpha})`;
-  ctx.beginPath();
-  ctx.ellipse(0, 0, size * 0.22, size * 0.65, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
+function heartPoint(t, scale, cx, cy, pulse = 1) {
+  const s = scale * pulse;
+  const x = cx + 16 * Math.pow(Math.sin(t), 3) * s;
+  const y =
+    cy -
+    (13 * Math.cos(t) -
+      5 * Math.cos(2 * t) -
+      2 * Math.cos(3 * t) -
+      Math.cos(4 * t)) *
+      s;
+  return { x, y };
 }
 
-function createParticles(width, height) {
-  const scale = width < 480 ? 4.9 : width < 768 ? 5.8 : 7.2;
-  const anchor = getHeartAnchor(width, height, scale);
-  const count = width < 768 ? 280 : 460;
-  const targets = createDenseHeartFill(anchor.x, anchor.y, scale, count);
-  const minR = Math.max(width, height) * 0.32;
-  const maxR = Math.max(width, height) * 0.88;
+function sampleHeartParams(count = HEART_POINTS) {
+  return Array.from({ length: count }, (_, i) => ((Math.PI * 2) / count) * i);
+}
 
+function buildHeartDust() {
+  return Array.from({ length: 1300 }, () => ({
+    t: Math.random() * Math.PI * 2,
+    rho: Math.pow(Math.random(), 0.42),
+    startAngle: Math.random() * Math.PI * 2,
+    startRadius: 220 + Math.random() * 260,
+    startYOffset: 120 + Math.random() * 180,
+    delay: Math.random() * 0.42,
+    twinkle: Math.random() * Math.PI * 2,
+    size: 0.9 + Math.random() * 1.9,
+    colorIndex: Math.floor(Math.random() * COLORS.length),
+  }));
+}
+
+function makeFloorButterfly(width, height) {
   return {
-    anchor,
-    particles: targets.map((target, index) => {
-      const angle = randomRange(0, Math.PI * 2);
-      const radius = randomRange(minR, maxR);
-      const startX = anchor.x + Math.cos(angle) * radius;
-      const startY = anchor.y + Math.sin(angle) * radius * 0.72;
-      return {
-        x: startX,
-        y: startY,
-        startX,
-        startY,
-        tx: target.x,
-        ty: target.y,
-        size: randomRange(4.5, 8.8),
-        delay: (index % 55) * 0.018 + randomRange(0, 0.55),
-        duration: randomRange(2.6, 4.2),
-        twinkle: randomRange(0, Math.PI * 2),
-        flutter: randomRange(0, Math.PI * 2),
-      };
-    }),
+    x: width / 2 + (Math.random() * 120 - 60),
+    y: height + Math.random() * 120,
+    vx: Math.random() * 0.7 - 0.35,
+    vy: -(0.8 + Math.random() * 1.6),
+    sprayTargetX: width / 2 + (Math.random() * 360 - 180),
+    sprayTargetY: height * (0.52 + Math.random() * 0.34),
+    flapPhase: Math.random() * Math.PI * 2,
+    flapSpeed: 3 + Math.random() * 4,
+    size: 1 + Math.random() * 2.2,
+    alpha: 0.22 + Math.random() * 0.5,
+    twinkle: Math.random() * Math.PI * 2,
+    colorIndex: Math.floor(Math.random() * COLORS.length),
   };
+}
+
+function makeParticle(width, height, heartTs) {
+  return {
+    x: width / 2 + (Math.random() * 80 - 40),
+    y: height + Math.random() * 120,
+    vx: Math.random() * 0.8 - 0.4,
+    vy: -(1 + Math.random() * 2),
+    ax: 0,
+    ay: 0,
+    tIndex: Math.floor(Math.random() * heartTs.length),
+    sprayTargetX: width / 2 + (Math.random() * 520 - 260),
+    sprayTargetY: height * (0.18 + Math.random() * 0.45),
+    gatherReady: false,
+    size: 1.8 + Math.random() * 2.6,
+    colorIndex: Math.floor(Math.random() * COLORS.length),
+    flapPhase: Math.random() * Math.PI * 2,
+    flapSpeed: 5 + Math.random() * 6,
+    alpha: 0.35 + Math.random() * 0.65,
+    life: 0,
+    maxLife: 280 + Math.random() * 240,
+  };
+}
+
+function resetParticle(p, width, height, heartTs) {
+  const n = makeParticle(width, height, heartTs);
+  Object.assign(p, n);
+}
+
+function retargetSpray(p, width, height) {
+  p.sprayTargetY = height * (0.22 + Math.random() * 0.48);
+  const spread = (height - p.sprayTargetY) * 0.22;
+  p.sprayTargetX = width / 2 + (Math.random() * 2 - 1) * spread;
+}
+
+function flowField(x, y, time) {
+  const nx = x * 0.0052;
+  const ny = y * 0.0047;
+  const a1 = Math.sin(nx * 1.9 + time * 0.75) + Math.cos(ny * 2.1 - time * 0.5);
+  const a2 = Math.sin((nx + ny) * 1.5 - time * 0.35);
+  const angle = a1 * 1.2 + a2 * 0.9;
+  const mag = 0.018 + 0.012 * (0.5 + 0.5 * Math.sin(time + nx));
+  return {
+    x: Math.cos(angle) * mag,
+    y: Math.sin(angle) * mag * 0.35,
+  };
+}
+
+function drawButterfly(ctx, x, y, size, rot, alpha, color, flap, lite) {
+  const open = 0.45 + 0.55 * Math.abs(Math.sin(flap));
+  const wingW = size * (1.1 + open * 0.5);
+  const wingH = size * 0.72;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+  ctx.globalAlpha = alpha;
+  if (!lite) {
+    ctx.shadowBlur = 7 + size * 1.4;
+    ctx.shadowColor = color;
+  }
+
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(-size * 0.72 * open, 0, wingW, wingH, -0.42, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.ellipse(size * 0.72 * open, 0, wingW, wingH, 0.42, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(220,245,255,0.95)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, size * 0.17, size * 0.66, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 }
 
 export default function ButterflyHeartCanvas() {
   const canvasRef = useRef(null);
   const frameRef = useRef(null);
+  const particlesRef = useRef([]);
   const startRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
-    const ctx = canvas.getContext('2d');
 
+    const ctx = canvas.getContext('2d');
+    const lite = isMobileViewport();
+    const maxParticles = lite ? MAX_PARTICLES_MOBILE : MAX_PARTICLES_DESKTOP;
+    const emitPerFrame = lite ? EMIT_PER_FRAME_MOBILE : EMIT_PER_FRAME_DESKTOP;
+    const heartTs = sampleHeartParams();
+    const heartDust = buildHeartDust();
+    let floorSwarm = [];
     let width = 0;
     let height = 0;
-    let particles = [];
-    let anchor = { x: 0, y: 0 };
+    let scale = 0;
+    let rot = 0;
+    let lastTs = 0;
 
     const resize = () => {
       width = canvas.clientWidth;
       height = canvas.clientHeight;
+      scale = width < 480 ? 7.5 : width < 768 ? 8.5 : 10.5;
       const dpr = getCanvasDpr(width);
       canvas.width = width * dpr;
       canvas.height = height * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      const data = createParticles(width, height);
-      particles = data.particles;
-      anchor = data.anchor;
+      particlesRef.current = [];
       startRef.current = null;
+      floorSwarm = Array.from(
+        { length: lite ? FLOOR_SWARM_MOBILE : FLOOR_SWARM_DESKTOP },
+        () => makeFloorButterfly(width, height),
+      );
     };
 
     resize();
     window.addEventListener('resize', resize);
 
-    const render = (timestamp) => {
-      if (!startRef.current) startRef.current = timestamp;
-      const elapsed = (timestamp - startRef.current) / 1000;
-      ctx.fillStyle = '#000000';
+    const render = (timeMs) => {
+      if (lite && timeMs - lastTs < 33) {
+        frameRef.current = requestAnimationFrame(render);
+        return;
+      }
+      lastTs = timeMs;
+
+      if (!startRef.current) startRef.current = timeMs;
+      const elapsed = (timeMs - startRef.current) * 0.001;
+      if (elapsed < INTRO_EMPTY_SEC) {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgb(0, 0, 0)';
+        ctx.fillRect(0, 0, width, height);
+        frameRef.current = requestAnimationFrame(render);
+        return;
+      }
+
+      const activeTime = elapsed - INTRO_EMPTY_SEC;
+      const gatherRaw = Math.max(0, activeTime - SPRAY_ONLY_SEC);
+      const gatherPhase = Math.min(1, gatherRaw / GATHER_DURATION_SEC);
+      const gatherStart = 0;
+      const gatherLocal = gatherPhase;
+      const rotationFactor = gatherPhase <= 0 ? 0 : Math.max(0, 1 - gatherPhase * 1.35);
+      rot += 0.00045 * rotationFactor;
+      const pulse = 1 + 0.065 * Math.sin(activeTime * 1.7);
+      const cx = width / 2;
+      const cy = height * 0.52;
+
+      const particles = particlesRef.current;
+      for (let i = 0; i < emitPerFrame && particles.length < maxParticles; i += 1) {
+        particles.push(makeParticle(width, height, heartTs));
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.16)';
       ctx.fillRect(0, 0, width, height);
 
-      const aura = ctx.createRadialGradient(anchor.x, anchor.y, 0, anchor.x, anchor.y, width * 0.65);
-      aura.addColorStop(0, 'rgba(255, 165, 125, 0.18)');
-      aura.addColorStop(0.35, 'rgba(255, 135, 160, 0.12)');
-      aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = aura;
-      ctx.fillRect(0, 0, width, height);
+      if (!lite) {
+        const bloom = ctx.createRadialGradient(
+          cx,
+          cy,
+          0,
+          cx,
+          cy,
+          Math.min(width, height) * 0.62 * pulse,
+        );
+        bloom.addColorStop(0, 'rgba(70, 180, 255, 0.16)');
+        bloom.addColorStop(0.5, 'rgba(40, 110, 220, 0.08)');
+        bloom.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = bloom;
+        ctx.fillRect(0, 0, width, height);
+      }
 
-      particles.forEach((p) => {
-        const local = Math.max(0, elapsed - GATHER_DELAY - p.delay);
-        const gather = easeOutCubic(Math.min(local / p.duration, 1));
-        p.x = p.startX + (p.tx - p.startX) * gather;
-        p.y = p.startY + (p.ty - p.startY) * gather;
-        const flap = Math.sin(elapsed * 9 + p.flutter);
-        const alpha = Math.min(1, gather * 1.2) * (0.75 + 0.25 * Math.sin(elapsed * 2.6 + p.twinkle));
-        drawButterfly(ctx, p.x, p.y, p.size, alpha, flap);
-      });
+      ctx.globalCompositeOperation = lite ? 'source-over' : 'lighter';
+
+      for (let i = 0; i < floorSwarm.length; i += 1) {
+        const f = floorSwarm[i];
+        const dx = f.sprayTargetX - f.x;
+        const dy = f.sprayTargetY - f.y;
+        const dist = Math.hypot(dx, dy) || 1;
+
+        // Bottom spray: upward force + mild turbulence + target pull.
+        f.vx += (Math.random() * 0.16 - 0.08) + (dx / dist) * 0.02;
+        f.vy += -0.035 + (dy / dist) * 0.012;
+        f.vx *= 0.965;
+        f.vy *= 0.968;
+        f.x += f.vx;
+        f.y += f.vy;
+
+        if (dist < 26) {
+          f.sprayTargetX = width / 2 + (Math.random() * 2 - 1) * ((height - f.y) * 0.3);
+          f.sprayTargetY = height * (0.5 + Math.random() * 0.32);
+        }
+
+        if (f.y < height * 0.45 || f.x < -80 || f.x > width + 80) {
+          const n = makeFloorButterfly(width, height);
+          Object.assign(f, n);
+        }
+
+        const alpha = f.alpha * (0.6 + 0.4 * Math.sin(activeTime * 2 + f.twinkle));
+        drawButterfly(
+          ctx,
+          f.x,
+          f.y,
+          f.size,
+          Math.sin(activeTime + f.twinkle) * 0.1,
+          alpha,
+          COLORS[f.colorIndex],
+          activeTime * f.flapSpeed + f.flapPhase,
+          lite,
+        );
+      }
+
+      for (let i = particles.length - 1; i >= 0; i -= 1) {
+        const p = particles[i];
+        const shouldGather = gatherPhase > 0;
+        p.life += 1;
+        p.ax = 0;
+        p.ay = 0;
+
+        if (!lite || i % 2 === 0) {
+          const ff = flowField(p.x, p.y, activeTime);
+          p.ax += ff.x;
+          p.ay += ff.y;
+        }
+
+        const upwardBand = Math.max(0, 1 - Math.min(1, (height - p.y) / (height * 0.82)));
+        p.ay += (-0.045 - upwardBand * 0.06) * (1 - gatherLocal * 0.9);
+        if (shouldGather) {
+          p.ax += (cx - p.x) * 0.0012;
+        }
+
+        let dx = 0;
+        let dy = 0;
+        let dist = 1;
+        if (!shouldGather && (p.life < 3 || Math.random() < 0.02)) {
+          retargetSpray(p, width, height);
+        }
+
+        if (shouldGather && !p.gatherReady) {
+          p.gatherReady = true;
+          p.tIndex = Math.floor(Math.random() * heartTs.length);
+        }
+
+        if (shouldGather) {
+          const t = heartTs[p.tIndex];
+          const target = heartPoint(t, scale, cx, cy, pulse);
+          dx = target.x - p.x;
+          dy = target.y - p.y;
+          dist = Math.hypot(dx, dy) || 1;
+          const attract = Math.min(0.42, 18 / dist) * (0.12 + gatherLocal * 0.36);
+          p.ax += (dx / dist) * attract;
+          p.ay += (dy / dist) * attract;
+        } else {
+          dx = p.sprayTargetX - p.x;
+          dy = p.sprayTargetY - p.y;
+          dist = Math.hypot(dx, dy) || 1;
+          const sprayAttract = Math.min(0.09, 9 / dist) * 0.08;
+          p.ax += (dx / dist) * sprayAttract;
+          p.ay += (dy / dist) * sprayAttract;
+
+          if (dist < 24 || p.y < height * 0.28) {
+            retargetSpray(p, width, height);
+          }
+        }
+
+        p.vx += p.ax;
+        p.vy += p.ay;
+        const damping = gatherPhase > 0.55 ? (lite ? 0.89 : 0.87) : lite ? 0.994 : 0.988;
+        p.vx *= damping;
+        p.vy *= damping;
+        p.x += p.vx;
+        p.y += p.vy;
+
+        if (rotationFactor > 0.02) {
+          const rx = p.x - cx;
+          const ry = p.y - cy;
+          const rX = rx * Math.cos(rot) - ry * Math.sin(rot) + cx;
+          const rY = rx * Math.sin(rot) + ry * Math.cos(rot) + cy;
+          p.x = rX;
+          p.y = rY;
+        }
+
+        if (!shouldGather && p.y < height * 0.58) {
+          resetParticle(p, width, height, heartTs);
+          continue;
+        }
+
+        const flap = (lite ? activeTime * 4.5 : activeTime * p.flapSpeed) + p.flapPhase;
+        const facing = Math.atan2(p.vy, p.vx) + Math.PI / 2;
+        drawButterfly(
+          ctx,
+          p.x,
+          p.y,
+          p.size,
+          facing,
+          p.alpha,
+          COLORS[p.colorIndex],
+          flap,
+          lite,
+        );
+
+        if (
+          (!shouldGather &&
+            (p.y < -120 ||
+              p.x < -220 ||
+              p.x > width + 220 ||
+              (p.y < height * 0.25 && Math.abs(p.x - cx) < width * 0.23))) ||
+          (gatherPhase < 0.8 && p.life > p.maxLife)
+        ) {
+          resetParticle(p, width, height, heartTs);
+        }
+      }
+
+      if (gatherPhase > 0.08) {
+        const fillProgress = gatherLocal;
+        for (let i = 0; i < heartDust.length; i += 1) {
+          const d = heartDust[i];
+          const local = Math.min(1, Math.max(0, (fillProgress - d.delay) / (1 - d.delay)));
+          const base = heartPoint(d.t, scale, cx, cy, pulse);
+          const targetX = cx + (base.x - cx) * d.rho;
+          const targetY = cy + (base.y - cy) * d.rho;
+          const startX = cx + Math.cos(d.startAngle) * d.startRadius;
+          const startY = height + d.startYOffset;
+          const ease = local * local * (3 - 2 * local);
+          const x = startX + (targetX - startX) * ease;
+          const y = startY + (targetY - startY) * ease;
+          const twinkle = 0.65 + 0.35 * Math.sin(activeTime * 2.3 + d.twinkle);
+          const alphaBoost = gatherPhase > 0.8 ? 1.45 : 1.15;
+          const alpha = ease * twinkle * (lite ? 0.55 : 0.78) * alphaBoost;
+          drawButterfly(
+            ctx,
+            x,
+            y,
+            d.size,
+            0,
+            alpha,
+            COLORS[d.colorIndex],
+            activeTime * 4 + d.twinkle,
+            lite,
+          );
+        }
+      }
 
       frameRef.current = requestAnimationFrame(render);
     };

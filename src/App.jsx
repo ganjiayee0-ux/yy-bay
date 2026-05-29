@@ -11,8 +11,8 @@ import LetterConfirmationScreen from './components/screens/LetterConfirmationScr
 import LoveLetterScreen from './components/screens/LoveLetterScreen';
 import AfterReadScreen from './components/screens/AfterReadScreen';
 import EndingScreen from './components/screens/EndingScreen';
+import ButterflyHeartScreen from './components/screens/ButterflyHeartScreen';
 import HeartRevealScreen from './components/screens/HeartRevealScreen';
-import HeartPulseScreen from './components/screens/HeartPulseScreen';
 import { SCREENS } from './config/constants';
 import { useAudio } from './hooks/useAudio';
 import { useLenis } from './hooks/useLenis';
@@ -33,7 +33,9 @@ export default function App() {
   useLenis(isLetterFlow, screen);
 
   const showBackground =
-    screen !== SCREENS.HEART_REVEAL && screen !== SCREENS.HEART_PULSE;
+    screen !== SCREENS.BUTTERFLY_HEART &&
+    screen !== SCREENS.HEART_REVEAL &&
+    screen !== SCREENS.HEART_PULSE;
 
   const markInteraction = useCallback(() => {
     setHasInteracted(true);
@@ -67,7 +69,7 @@ export default function App() {
       play();
     }
     setTimeout(() => {
-      setScreen(SCREENS.HEART_PULSE);
+      setScreen(SCREENS.BUTTERFLY_HEART);
       setShowReveal(false);
     }, 1200);
   };
@@ -116,8 +118,10 @@ export default function App() {
         return <EndingScreen onNext={handleEndingNext} />;
       case SCREENS.HEART_REVEAL:
         return <HeartRevealScreen onBack={handleBackToLetter} />;
+      case SCREENS.BUTTERFLY_HEART:
+        return <ButterflyHeartScreen onBack={handleBackToLetter} />;
       case SCREENS.HEART_PULSE:
-        return <HeartPulseScreen onBackToLetter={handleBackToLetter} />;
+        return <ButterflyHeartScreen onBack={handleBackToLetter} />;
       case SCREENS.GOODBYE:
         return null;
       default:
@@ -145,10 +149,16 @@ export default function App() {
       )}
       <FallingHearts
         intensity={
-          screen === SCREENS.HEART_REVEAL || screen === SCREENS.HEART_PULSE ? 0.35 : 1
+          screen === SCREENS.BUTTERFLY_HEART ||
+          screen === SCREENS.HEART_REVEAL ||
+          screen === SCREENS.HEART_PULSE
+            ? 0.35
+            : 1
         }
         visible={
           screen !== SCREENS.GOODBYE &&
+          screen !== SCREENS.BUTTERFLY_HEART &&
+          screen !== SCREENS.HEART_REVEAL &&
           screen !== SCREENS.HEART_PULSE
         }
       />

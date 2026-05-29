@@ -1,0 +1,100 @@
+.screen {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stage {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  overflow: hidden;
+  background: #000;
+  border-radius: 10px;
+}
+
+.blackout {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.text {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  text-align: center;
+  pointer-events: none;
+  color: rgba(255, 248, 232, 0.96);
+  text-shadow:
+    0 0 14px rgba(255, 175, 120, 0.55),
+    0 0 32px rgba(255, 130, 165, 0.35);
+}
+
+.text p {
+  margin: 0;
+  font-family: var(--font-serif);
+  letter-spacing: 0.1em;
+}
+
+.text p:first-child {
+  font-size: clamp(1.6rem, 6.2vw, 3.1rem);
+}
+
+.text p:last-child {
+  margin-top: 0.45rem;
+  font-size: clamp(1.2rem, 4.8vw, 2rem);
+}
+
+.backButton {
+  position: absolute;
+  bottom: clamp(0.35rem, 1.2vh, 0.55rem);
+  left: 50%;
+  z-index: 10;
+  padding: 0.75rem 1.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 40px rgba(184, 161, 255, 0.15);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.92rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition:
+    box-shadow 0.5s ease,
+    border-color 0.5s ease,
+    background 0.5s ease;
+}
+
+@media (orientation: portrait) {
+  .stage {
+    width: 100vw;
+    height: min(100vh, calc(100vw * 9 / 16));
+    border-radius: 0;
+  }
+}
+
+@media (orientation: landscape) {
+  .stage {
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+  }
+}
+
+.backButton:hover {
+  border-color: rgba(184, 161, 255, 0.45);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 50px rgba(184, 161, 255, 0.25);
+  color: rgba(255, 255, 255, 0.92);
+}
